@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Loan Risk Scoring Terminal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #EDEFF2;
+    --surface: #FFFFFF;
+    --ink: #14212E;
+    --ink-soft: #4B5A68;
+    --accent: #1F4E79;
+    --accent-soft: #E4ECF3;
+    --line: #C9CDD3;
+    --risk-low: #2F6F4E;
+    --risk-low-bg: #E5F0EA;
+    --risk-mid: #8A6D1F;
+    --risk-mid-bg: #F5EFDD;
+    --risk-high: #9C3B3B;
+    --risk-high-bg: #F5E4E4;
+    --font-serif: 'Source Serif 4', Georgia, 'Times New Roman', serif;
+    --font-sans: 'IBM Plex Sans', -apple-system, Segoe UI, sans-serif;
+    --font-mono: 'IBM Plex Mono', 'Courier New', monospace;
+  }
+  :root:not([data-theme="light"]) {
+    @media (prefers-color-scheme: dark) {
+      --bg: #0E1620;
+      --surface: #16202C;
+      --ink: #E7ECF1;
+      --ink-soft: #9AA9B8;
+      --accent: #6C9BC4;
+      --accent-soft: #1C2E3E;
+      --line: #2B3947;
+      --risk-low: #6FBE93;
+      --risk-low-bg: #16281F;
+      --risk-mid: #D8B860;
+      --risk-mid-bg: #2B2415;
+      --risk-high: #E08080;
+      --risk-high-bg: #2E1919;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0E1620;
+    --surface: #16202C;
+    --ink: #E7ECF1;
+    --ink-soft: #9AA9B8;
+    --accent: #6C9BC4;
+    --accent-soft: #1C2E3E;
+    --line: #2B3947;
+    --risk-low: #6FBE93;
+    --risk-low-bg: #16281F;
+    --risk-mid: #D8B860;
+    --risk-mid-bg: #2B2415;
+    --risk-high: #E08080;
+    --risk-high-bg: #2E1919;
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .masthead {
+    border-bottom: 1px solid var(--line);
+    padding: 28px clamp(20px, 4vw, 56px) 22px;
+  }
+  .masthead-inner {
+    max-width: 1080px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .masthead h1 {
+    font-family: var(--font-serif);
+    font-weight: 600;
+    font-size: clamp(22px, 3vw, 30px);
+    margin: 0;
+    letter-spacing: -0.01em;
+  }
+  .masthead .ref {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--ink-soft);
+  }
+
+  main {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 36px clamp(20px, 4vw, 56px) 64px;
+    display: grid;
+    grid-template-columns: 1.15fr 1fr;
+    gap: 40px;
+  }
+  @media (max-width: 780px) {
+    main { grid-template-columns: 1fr; gap: 28px; }
+  }
+
+  .panel-label {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    color: var(--ink-soft);
+    margin: 0 0 18px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .ledger { border-top: 1px solid var(--line); }
+  .field-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 16px;
+    padding: 13px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .field-row label {
+    font-size: 14px;
+    color: var(--ink);
+  }
+  .field-row .hint {
+    display: block;
+    font-size: 11.5px;
+    color: var(--ink-soft);
+    margin-top: 2px;
+  }
+  .field-row input[type="number"],
+  .field-row select {
+    font-family: var(--font-mono);
+    font-size: 14px;
+    text-align: right;
+    width: 128px;
+    padding: 7px 9px;
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    background: var(--surface);
+    color: var(--ink);
+  }
+  .field-row select { text-align: left; width: 170px; }
+  .field-row input:focus, .field-row select:focus {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+  input[type="range"] {
+    width: 128px;
+    accent-color: var(--accent);
+  }
+  .range-row .field-row-value {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    width: 128px;
+    text-align: right;
+    display: block;
+    color: var(--ink-soft);
+    margin-top: 4px;
+  }
+
+  .readout {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    padding: 26px 24px;
+    position: sticky;
+    top: 20px;
+  }
+  .score-block { text-align: left; margin-bottom: 22px; }
+  .score-number {
+    font-family: var(--font-mono);
+    font-size: 48px;
+    font-weight: 500;
+    line-height: 1;
+    letter-spacing: -0.01em;
+  }
+  .score-caption {
+    font-size: 13px;
+    color: var(--ink-soft);
+    margin-top: 6px;
+  }
+  .verdict-tag {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.03em;
+    padding: 5px 10px;
+    margin-top: 12px;
+    border: 1px solid transparent;
+  }
+  .verdict-low { background: var(--risk-low-bg); color: var(--risk-low); }
+  .verdict-mid { background: var(--risk-mid-bg); color: var(--risk-mid); }
+  .verdict-high { background: var(--risk-high-bg); color: var(--risk-high); }
+
+  .gauge-track {
+    width: 100%;
+    height: 8px;
+    background: var(--accent-soft);
+    border: 1px solid var(--line);
+    position: relative;
+    margin: 4px 0 24px;
+  }
+  .gauge-fill {
+    position: absolute;
+    top: -1px; left: -1px; bottom: -1px;
+    background: var(--accent);
+    transition: width 0.25s ease;
+  }
+
+  .factor-title {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    color: var(--ink-soft);
+    margin: 0 0 10px;
+  }
+  .factor-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    padding: 7px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .factor-row:last-child { border-bottom: none; }
+  .factor-row .val {
+    font-family: var(--font-mono);
+  }
+  .factor-up { color: var(--risk-high); }
+  .factor-down { color: var(--risk-low); }
+
+  .note {
+    margin-top: 22px;
+    padding-top: 16px;
+    border-top: 1px solid var(--line);
+    font-size: 12px;
+    color: var(--ink-soft);
+    line-height: 1.5;
+  }
+</style>
+</head>
+<body>
+
+<div class="masthead">
+  <div class="masthead-inner">
+    <h1>Loan Risk Scoring Terminal</h1>
+    <span class="ref">MODEL — LOGISTIC REGRESSION v1</span>
+  </div>
+</div>
+
+<main>
+  <section>
+    <p class="panel-label">APPLICANT &amp; LOAN LEDGER</p>
+    <div class="ledger" id="ledger"></div>
+  </section>
+
+  <section>
+    <div class="readout">
+      <div class="score-block">
+        <div class="score-number" id="probOut">—</div>
+        <div class="score-caption">Estimated probability of default</div>
+        <div class="gauge-track"><div class="gauge-fill" id="gaugeFill" style="width:0%"></div></div>
+        <span class="verdict-tag" id="verdictTag">—</span>
+      </div>
+
+      <p class="factor-title">KEY DRIVERS FOR THIS APPLICANT</p>
+      <div id="factorList"></div>
+
+      <div class="note">
+        Trained on a synthetic 10,000-loan dataset (test AUC ≈ 0.71). Coefficients run
+        client-side — nothing here is sent anywhere. For demonstration only; not a
+        real underwriting decision.
+      </div>
+    </div>
+  </section>
+</main>
+
+<script>
+// ---- Model parameters extracted from the trained sklearn Pipeline ----
+const NUM_FEATURES = ["age","annual_income","employment_length_years","credit_history_years",
+  "open_credit_lines","past_delinquencies_2yr","credit_utilization","loan_amount",
+  "loan_term_months","interest_rate","debt_to_income","payment_to_income"];
+
+const MEAN = [40.2171250, 61885.4841, 5.8695250, 19.4132125, 4.9822500, 0.4013750,
+  0.2848104, 13178.1585, 37.3005000, 9.0323613, 0.1069163, 0.1201508];
+const SCALE = [11.6822293, 33286.1142, 5.8713209, 11.7265874, 2.2148217, 0.6304943,
+  0.1589744, 8780.8469, 14.0655146, 1.9545530, 0.1221278, 0.1311929];
+
+// Coefficient order: 12 numeric, then home_ownership[MORTGAGE,OWN,RENT], then
+// purpose[credit_card,debt_consolidation,home_improvement,major_purchase,medical,other,small_business]
+const COEF = [0.0933699519, 0.00739020266, -0.0437521111, -0.358475620, -0.166383921,
+  0.265261685, 0.302544477, 0.000714968699, 0.103562081, 0.00791581031, 0.823747126,
+  -0.399696474, -0.0392445847, -0.0991749673, 0.0438349221, -0.0844383769, -0.0112863855,
+  0.104743780, 0.0262970463, -0.191872508, -0.0640895734, 0.126061388];
+const INTERCEPT = -0.15170134;
+
+const HOME_OPTIONS = ["MORTGAGE","OWN","RENT"];
+const PURPOSE_OPTIONS = ["credit_card","debt_consolidation","home_improvement",
+  "major_purchase","medical","other","small_business"];
+const PURPOSE_LABELS = {
+  credit_card: "Credit card refinance", debt_consolidation: "Debt consolidation",
+  home_improvement: "Home improvement", major_purchase: "Major purchase",
+  medical: "Medical expense", other: "Other", small_business: "Small business"
+};
+
+const FRIENDLY = {
+  age: "Age", annual_income: "Annual income ($)",
+  employment_length_years: "Employment length (yrs)",
+  credit_history_years: "Credit history length (yrs)",
+  open_credit_lines: "Open credit lines",
+  past_delinquencies_2yr: "Delinquencies, past 2 yrs",
+  loan_amount: "Loan amount ($)", loan_term_months: "Loan term (months)",
+  interest_rate: "Interest rate offered (%)"
+};
+
+const fields = [
+  { key: "age", type: "number", min: 18, max: 80, val: 35 },
+  { key: "annual_income", type: "number", min: 15000, max: 400000, val: 65000, hint: "gross, per year" },
+  { key: "employment_length_years", type: "number", min: 0, max: 40, val: 6, step: 0.5 },
+  { key: "credit_history_years", type: "number", min: 0, max: 55, val: 12, step: 0.5 },
+  { key: "open_credit_lines", type: "number", min: 0, max: 20, val: 5 },
+  { key: "past_delinquencies_2yr", type: "number", min: 0, max: 10, val: 0 },
+  { key: "credit_utilization_pct", type: "range", min: 0, max: 100, val: 30, hint: "% of available credit in use" },
+  { key: "loan_amount", type: "number", min: 1000, max: 100000, val: 15000 },
+  { key: "loan_term_months", type: "select", options: [12,24,36,48,60], val: 36 },
+  { key: "interest_rate", type: "number", min: 4, max: 25, val: 9.5, step: 0.1, hint: "% APR" },
+  { key: "home_ownership", type: "select", options: HOME_OPTIONS, val: "MORTGAGE" },
+  { key: "purpose", type: "select", options: PURPOSE_OPTIONS, val: "debt_consolidation", labels: PURPOSE_LABELS },
+];
+
+const ledger = document.getElementById("ledger");
+
+function label(f) {
+  if (f.key === "credit_utilization_pct") return "Credit utilization";
+  if (f.key === "home_ownership") return "Home ownership";
+  if (f.key === "purpose") return "Loan purpose";
+  return FRIENDLY[f.key] || f.key;
+}
+
+fields.forEach(f => {
+  const row = document.createElement("div");
+  row.className = "field-row" + (f.type === "range" ? " range-row" : "");
+  const labelWrap = document.createElement("div");
+  labelWrap.innerHTML = `<label for="${f.key}">${label(f)}</label>` +
+    (f.hint ? `<span class="hint">${f.hint}</span>` : "");
+  row.appendChild(labelWrap);
+
+  let input;
+  if (f.type === "select") {
+    input = document.createElement("select");
+    f.options.forEach(o => {
+      const opt = document.createElement("option");
+      opt.value = o;
+      opt.textContent = f.labels ? f.labels[o] : o;
+      if (o == f.val) opt.selected = true;
+      input.appendChild(opt);
+    });
+  } else {
+    input = document.createElement("input");
+    input.type = f.type === "range" ? "range" : "number";
+    input.min = f.min; input.max = f.max;
+    if (f.step) input.step = f.step;
+    input.value = f.val;
+  }
+  input.id = f.key;
+  input.addEventListener("input", () => { compute(); if (f.type === "range") updateRangeCaption(f.key); });
+
+  const inputWrap = document.createElement("div");
+  inputWrap.appendChild(input);
+  if (f.type === "range") {
+    const cap = document.createElement("span");
+    cap.className = "field-row-value";
+    cap.id = f.key + "_cap";
+    inputWrap.appendChild(cap);
+  }
+  row.appendChild(inputWrap);
+  ledger.appendChild(row);
+});
+
+function updateRangeCaption(key) {
+  document.getElementById(key + "_cap").textContent = document.getElementById(key).value + "%";
+}
+updateRangeCaption("credit_utilization_pct");
+
+function getVal(key) {
+  const el = document.getElementById(key);
+  return el.type === "select-one" ? el.value : parseFloat(el.value);
+}
+
+function computeDerived(inputs) {
+  const { annual_income, loan_amount, loan_term_months, interest_rate } = inputs;
+  let dti = (loan_amount / loan_term_months * 12) / annual_income;
+  dti = Math.min(Math.max(dti, 0), 2);
+
+  const monthly_income = annual_income / 12;
+  const r = interest_rate / 1200;
+  const installment = loan_amount * r / (1 - Math.pow(1 + r, -loan_term_months));
+  let pti = installment / monthly_income;
+  pti = Math.min(Math.max(pti, 0), 3);
+
+  return { debt_to_income: dti, payment_to_income: pti };
+}
+
+function sigmoid(z) { return 1 / (1 + Math.exp(-z)); }
+
+function compute() {
+  const raw = {};
+  fields.forEach(f => { raw[f.key] = getVal(f.key); });
+  raw.credit_utilization = raw.credit_utilization_pct / 100;
+
+  const derived = computeDerived(raw);
+  const numVals = {
+    age: raw.age, annual_income: raw.annual_income,
+    employment_length_years: raw.employment_length_years,
+    credit_history_years: raw.credit_history_years,
+    open_credit_lines: raw.open_credit_lines,
+    past_delinquencies_2yr: raw.past_delinquencies_2yr,
+    credit_utilization: raw.credit_utilization,
+    loan_amount: raw.loan_amount, loan_term_months: raw.loan_term_months,
+    interest_rate: raw.interest_rate,
+    debt_to_income: derived.debt_to_income,
+    payment_to_income: derived.payment_to_income,
+  };
+
+  let z = INTERCEPT;
+  const contributions = [];
+
+  NUM_FEATURES.forEach((k, i) => {
+    const scaled = (numVals[k] - MEAN[i]) / SCALE[i];
+    const contrib = scaled * COEF[i];
+    z += contrib;
+    contributions.push({ label: FRIENDLY[k] || k, value: contrib });
+  });
+
+  HOME_OPTIONS.forEach((opt, i) => {
+    const active = raw.home_ownership === opt ? 1 : 0;
+    const coef = COEF[12 + i];
+    z += active * coef;
+    if (active) contributions.push({ label: "Home ownership: " + opt, value: coef });
+  });
+
+  PURPOSE_OPTIONS.forEach((opt, i) => {
+    const active = raw.purpose === opt ? 1 : 0;
+    const coef = COEF[15 + i];
+    z += active * coef;
+    if (active) contributions.push({ label: "Purpose: " + (PURPOSE_LABELS[opt] || opt), value: coef });
+  });
+
+  const prob = sigmoid(z);
+  renderResult(prob, contributions);
+}
+
+function renderResult(prob, contributions) {
+  document.getElementById("probOut").textContent = (prob * 100).toFixed(1) + "%";
+  document.getElementById("gaugeFill").style.width = Math.min(prob * 100 * 2.5, 100) + "%";
+
+  const tag = document.getElementById("verdictTag");
+  if (prob < 0.06) { tag.textContent = "LOW RISK"; tag.className = "verdict-tag verdict-low"; }
+  else if (prob < 0.15) { tag.textContent = "MODERATE RISK"; tag.className = "verdict-tag verdict-mid"; }
+  else { tag.textContent = "ELEVATED RISK"; tag.className = "verdict-tag verdict-high"; }
+
+  const sorted = contributions.slice().sort((a, b) => Math.abs(b.value) - Math.abs(a.value)).slice(0, 5);
+  const list = document.getElementById("factorList");
+  list.innerHTML = "";
+  sorted.forEach(c => {
+    const row = document.createElement("div");
+    row.className = "factor-row";
+    const dir = c.value >= 0 ? "factor-up" : "factor-down";
+    const sign = c.value >= 0 ? "▲ raises risk" : "▼ lowers risk";
+    row.innerHTML = `<span>${c.label}</span><span class="val ${dir}">${sign}</span>`;
+    list.appendChild(row);
+  });
+}
+
+compute();
+</script>
+
+</body>
+</html>
